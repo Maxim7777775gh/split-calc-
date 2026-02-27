@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Split-Flow Calculator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%); color: #eee; padding: 20px; min-height: 100vh; }
+        .container { max-width: 800px; margin: 0 auto; background: rgba(30, 30, 46, 0.9); padding: 30px; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        h1 { text-align: center; color: #64b5f6; margin-bottom: 30px; font-size: 2.5em; text-shadow: 0 0 20px rgba(100,181,246,0.3); }
+        .input-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .input-group { background: rgba(45,45,68,0.6); padding: 20px; border-radius: 15px; border: 1px solid rgba(100,181,246,0.2); }
+        label { display: block; margin-bottom: 8px; color: #90caf9; font-weight: 500; }
+        input { width: 100%; padding: 12px; background: rgba(30,30,46,0.8); border: 2px solid rgba(100,181,246,0.3); color: #eee; border-radius: 8px; font-size: 16px; }
+        input:focus { outline: none; border-color: #64b5f6; box-shadow: 0 0 15px rgba(100,181,246,0.3); }
+        .button-group { display: flex; gap: 15px; justify-content: center; margin-bottom: 30px; }
+        button { padding: 12px 30px; background: linear-gradient(135deg, #64b5f6 0%, #42a5f5 100%); color: white; border: none; border-radius: 25px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(100,181,246,0.3); }
+        button:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(100,181,246,0.4); }
+        .reset-button { background: linear-gradient(135deg, #ef5350 0%, #e53935 100%); box-shadow: 0 4px 15px rgba(239,83,80,0.3); }
+        .reset-button:hover { box-shadow: 0 6px 25px rgba(239,83,80,0.4); }
+        .warning { background: rgba(244,67,54,0.2); border: 2px solid #f44336; color: #ffcdd2; padding: 15px; border-radius: 10px; margin-bottom: 20px; display: none; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; background: rgba(45,45,68,0.6); border-radius: 15px; overflow: hidden; }
+        th, td { padding: 15px; text-align: center; border-bottom: 1px solid rgba(100,181,246,0.2); }
+        th { background: rgba(100,181,246,0.2); color: #64b5f6; font-weight: 600; }
+        tr:hover { background: rgba(100,181,246,0.1); }
+        .chart-container { background: rgba(45,45,68,0.6); padding: 20px; border-radius: 15px; margin-top: 20px; }
+        .chart-title { color: #90caf9; margin-bottom: 15px; font-weight: 600; }
+        .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+        .bar-item { display: flex; align-items: center; gap: 15px; }
+        .bar-label { min-width: 80px; color: #eee; }
+        .bar-wrapper { flex: 1; background: rgba(30,30,46,0.8); border-radius: 10px; height: 30px; position: relative; overflow: hidden; }
+        .bar { height: 100%; background: linear-gradient(90deg, #64b5f6 0%, #42a5f5 100%); border-radius: 10px; transition: width 0.5s ease; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; color: white; font-weight: 600; }
+        .percentage { min-width: 60px; text-align: right; color: #90caf9; font-weight: 600; }
+        @media (max-width: 768px) { .container { padding: 20px; } h1 { font-size: 2em; } .input-section { grid-template-columns: 1fr; } .button-group { flex-direction: column; } button { width: 100%; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Split-Flow Calculator</h1>
+        
+        <div class="input-section">
+            <div class="input-group">
+                <label for="totalInput">Total Input (items/second)</label>
+                <input type="number" id="totalInput" value="100" step="0.01" placeholder="e.g. 100">
+            </div>
+            
+            <div class="input-group">
+                <label for="outputPerSplit">Desired Output per Split</label>
+                <input type="number" id="outputPerSplit" value="20" step="0.01" placeholder="e.g. 20">
+            </div>
+            
+            <div class="input-group">
+                <label for="numberOfSplits">Number of Splits</label>
+                <input type="number" id="numberOfSplits" value="4" step="1" placeholder="e.g. 4">
+            </div>
+            
+            <div class="input-group">
+                <label for="startAmount">Start Amount (optional)</label>
+                <input type="number" id="startAmount" step="0.01" placeholder="Leave empty = Input">
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button onclick="calculate()">📊 Calculate</button>
+            <button class="reset-button" onclick="reset()">🔄 Reset</button>
+        </div>
+        
+        <div class="warning" id="warning"></div>
+        
+        <div class="results-section">
+            <table id="resultsTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Split #</th>
+                        <th>Flow Before</th>
+                        <th>Percentage</th>
+                        <th>Output</th>
+                        <th>Flow After</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody"></tbody>
+            </table>
+            
+            <div class="chart-container" id="chartContainer" style="display: none;">
+                <div class="chart-title">📊 Percentage Distribution</div>
+                <div class="bar-chart" id="barChart"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function calculate() {
+            const totalInput = parseFloat(document.getElementById('totalInput').value) || 0;
+            const outputPerSplit = parseFloat(document.getElementById('outputPerSplit').value) || 0;
+            const numberOfSplits = parseInt(document.getElementById('numberOfSplits').value) || 0;
+            const startAmountInput = document.getElementById('startAmount').value;
+            const startAmount = startAmountInput ? parseFloat(startAmountInput) : totalInput;
+            
+            if (totalInput <= 0 || outputPerSplit <= 0 || numberOfSplits <= 0) {
+                hideResults();
+                return;
+            }
+            
+            const totalRequired = outputPerSplit * numberOfSplits;
+            const warning = document.getElementById('warning');
+            
+            if (startAmount < totalRequired) {
+                warning.textContent = `⚠️ Warning: The input (${startAmount.toFixed(2)}) is not sufficient for all splits. Required: ${totalRequired.toFixed(2)}`;
+                warning.style.display = 'block';
+            } else {
+                warning.style.display = 'none';
+            }
+            
+            const results = [];
+            let remainingFlow = startAmount;
+            
+            for (let i = 1; i <= numberOfSplits; i++) {
+                const flowBefore = remainingFlow;
+                const percentage = (outputPerSplit / remainingFlow) * 100;
+                const output = outputPerSplit;
+                remainingFlow -= output;
+                
+                results.push({
+                    split: i,
+                    flowBefore: flowBefore,
+                    percentage: percentage,
+                    output: output,
+                    flowAfter: remainingFlow
+                });
+                
+                if (remainingFlow <= 0) break;
+            }
+            
+            displayResults(results);
+        }
+        
+        function displayResults(results) {
+            const tbody = document.getElementById('resultsBody');
+            const barChart = document.getElementById('barChart');
+            
+            tbody.innerHTML = '';
+            barChart.innerHTML = '';
+            
+            results.forEach(result => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${result.split}</td>
+                    <td>${result.flowBefore.toFixed(2)}</td>
+                    <td>${result.percentage.toFixed(2)}%</td>
+                    <td>${result.output.toFixed(2)}</td>
+                    <td>${result.flowAfter.toFixed(2)}</td>
+                `;
+                
+                const barItem = document.createElement('div');
+                barItem.className = 'bar-item';
+                barItem.innerHTML = `
+                    <div class="bar-label">Split ${result.split}</div>
+                    <div class="bar-wrapper">
+                        <div class="bar" style="width: ${Math.min(result.percentage, 100)}%">
+                            ${result.percentage.toFixed(1)}%
+                        </div>
+                    </div>
+                    <div class="percentage">${result.percentage.toFixed(2)}%</div>
+                `;
+                barChart.appendChild(barItem);
+            });
+            
+            document.getElementById('resultsTable').style.display = 'table';
+            document.getElementById('chartContainer').style.display = 'block';
+        }
+        
+        function hideResults() {
+            document.getElementById('resultsTable').style.display = 'none';
+            document.getElementById('chartContainer').style.display = 'none';
+            document.getElementById('warning').style.display = 'none';
+        }
+        
+        function reset() {
+            document.getElementById('totalInput').value = '100';
+            document.getElementById('outputPerSplit').value = '20';
+            document.getElementById('numberOfSplits').value = '4';
+            document.getElementById('startAmount').value = '';
+            hideResults();
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = ['totalInput', 'outputPerSplit', 'numberOfSplits', 'startAmount'];
+            inputs.forEach(id => {
+                document.getElementById(id).addEventListener('input', calculate);
+            });
+            calculate();
+        });
+    </script>
+</body>
+</html>
